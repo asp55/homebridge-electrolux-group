@@ -1,26 +1,26 @@
 {
-  "name": "homebridge-plugin-name",
-  "displayName": "Plugin Name",
+  "name": "homebridge-electrolux-group",
+  "displayName": "homebridge electrolux group",
   "type": "module",
   "version": "1.0.0",
   "private": true,
-  "description": "A short description about what your plugin does.",
-  "author": "Your Name",
+  "description": "Homebridge plugin for electrolux, aeg, & frigidaire devices using the Electrolux Group platform's API (https://developer.electrolux.one)",
+  "author": "Andrew S. Parnell",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/USERNAME/GITHUB_PROJECT_NAME#readme",
+  "homepage": "https://github.com/asp55/homebridge-electrolux-group#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME.git"
+    "url": "https://github.com/asp55/homebridge-electrolux-group.git"
   },
   "bugs": {
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME/issues"
+    "url": "https://github.com/asp55/homebridge-electrolux-group/issues"
   },
   "keywords": [
     "homebridge-plugin"
   ],
   "main": "dist/index.js",
   "engines": {
-    "node": "^18.20.4 || ^20.16.0 || ^22.6.0",
+    "node": "^20.16.0 || ^22.6.0",
     "homebridge": "^1.8.0 || ^2.0.0-beta.0"
   },
   "scripts": {
