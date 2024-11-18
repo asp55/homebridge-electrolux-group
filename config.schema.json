@@ -1,16 +1,54 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "ElectroluxGroup",
   "pluginType": "platform",
   "singular": true,
   "schema": {
     "type": "object",
     "properties": {
-      "name": {
-        "title": "Name",
+      "api_key": {
+        "title": "Electrolux API Key",
         "type": "string",
-        "required": true,
-        "default": "Example Dynamic Platform"
+        "required": true
+      },
+      "Access Token": { 
+        "type": "string",
+        "required": true
+      },
+      "Access token type": { 
+        "type": "string",
+        "required": true
+      },
+      "Refresh Token": { 
+        "type": "string",
+        "required": true
       }
     }
-  }
+  },
+  "form": [
+    {
+      "type": "fieldset",
+      "name": "<span>API</span>",
+      "items": [
+        {
+          "type": "help",
+          "helpvalue": "To get an API key:<ol><li>Open the Electrolux Group Developers <a href=\"https://developer.electrolux.one/dashboard\">Dashboard</a> page </li><li>Enter homebridge-electrolux-plugin for the API Key Name</li><li>Click on CREATE NEW API KEY.</li></ol>"
+        },
+        "api_key"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "name": "Authorization",
+      "items": [
+        {
+          "type": "help",
+          "helpvalue": "<ol><li>Open the Electrolux Group Developers <a href=\"https://developer.electrolux.one/dashboard\">Dashboard</a> page </li><li>Click on GET ACCESS TOKEN.</li><li>Complete the authentication flow.</li></ol>"
+        },
+        "Access Token",
+        "Access token type",
+        "Refresh Token"
+
+      ]
+    }
+  ]
 }

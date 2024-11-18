@@ -1,6 +1,6 @@
 {
   "name": "homebridge-electrolux-group",
-  "displayName": "homebridge electrolux group",
+  "displayName": "Homebridge Electrolux Group",
   "type": "module",
   "version": "1.0.0",
   "private": true,
