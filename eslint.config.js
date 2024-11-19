@@ -5,7 +5,7 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ["dist/**"],
+    ignores: ["dist/**"]
   },
   {
     rules: {
@@ -13,7 +13,7 @@ export default tseslint.config(
       "indent": ["error", 2, { "SwitchCase": 0 }],
       "linebreak-style": ["error", "unix"],
       "semi": ["error", "always"],
-      "comma-dangle": ["error", "always-multiline"],
+      "comma-dangle": ["error", "never"],
       "dot-notation": "error",
       "eqeqeq": ["error", "smart"],
       "curly": ["error", "all"],
@@ -24,13 +24,13 @@ export default tseslint.config(
       "no-use-before-define": "off",
       "@typescript-eslint/no-use-before-define": ["error", { "classes": false, "enums": false }],
       "@typescript-eslint/no-unused-vars": ["error", { "caughtErrors": "none" }],
-      "@typescript-eslint/no-explicit-any": "warn",
-    },
+      "@typescript-eslint/no-explicit-any": "warn"
+    }
   },
   {
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: "module",
-    },
-  },
+      sourceType: "module"
+    }
+  }
 );

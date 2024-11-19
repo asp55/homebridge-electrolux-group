@@ -24,7 +24,7 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
   constructor(
     public readonly log: Logging,
     public readonly config: PlatformConfig,
-    public readonly api: API,
+    public readonly api: API
   ) {
     this.Service = api.hap.Service;
     this.Characteristic = api.hap.Characteristic;
@@ -39,7 +39,7 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
       this.electroluxAPI.fallbackConfig = {
         accessToken: this.config.accessToken,
         accessTokenType: this.config.accessTokenType,
-        refreshToken: this.config.refreshToken,
+        refreshToken: this.config.refreshToken
       };
     }
     else {

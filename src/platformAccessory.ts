@@ -16,12 +16,12 @@ export class ElectroluxPlatformAccessory {
    */
   private exampleStates = {
     On: false,
-    Brightness: 100,
+    Brightness: 100
   };
 
   constructor(
     private readonly platform: ElectroluxPluginPlatform,
-    private readonly accessory: PlatformAccessory,
+    private readonly accessory: PlatformAccessory
   ) {
     //console.log("Context", accessory.context.device);
 
