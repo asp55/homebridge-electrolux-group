@@ -31,6 +31,22 @@ type ElectroluxAPIAppliance = {
   created: string;
 }
 
+type ElectroluxAPIApplianceInfo = {
+  applianceInfo: {
+    serialNumber: string;
+    pnc: string;
+    brand: string;
+    deviceType: string;
+    model: string;
+    variant: string;
+    colour: string;
+  };
+  capabilities: any;
+}
+
+
+type ElectroluxAPIApplianceState = any;
+
 export class ElectroluxAPI extends EventEmitter  {
 
   private _axios:AxiosInstance = axios.create({ baseURL: 'https://api.developer.electrolux.one/api/v1' });
@@ -251,17 +267,82 @@ export class ElectroluxAPI extends EventEmitter  {
   async appliances():Promise<ElectroluxAPIAppliance[]> {
     if(!this._ready) {
       this.log.error("Can't pull appliances until the API is ready");
-    }
-    else {
-      this.log.debug("Getting appliances");
-      return await this._getAppliances()
-      .then(response=>response.data)
-      .catch(()=>[])
-
+      throw("API Not Ready");
     }
 
-    return [];
+    this.log.debug("Getting appliances");
+    return await this._getAppliances()
+    .then(response=>response.data)
 
+  }
+
+  async applianceInfo(applianceId:string):Promise<ElectroluxAPIApplianceInfo> {
+    if(!this._ready) {
+      this.log.error("Can't pull appliances until the API is ready");
+      throw("API Not Ready");
+    }
+
+    if(this._tokens === undefined) {
+      throw("Authorization tokens undefined");
+    }
+
+    return await this._axios({
+        method: 'get',
+        url: `/appliances/${applianceId}/info`,
+        headers: {
+          'x-api-key': this._apiKey,
+          'Authorization': `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
+        }
+      })
+      .then(response=>response.data as ElectroluxAPIApplianceInfo);
+  }
+
+
+
+  async applianceState(applianceId:string):Promise<ElectroluxAPIApplianceState> {
+    if(!this._ready) {
+      this.log.error("Can't pull appliances until the API is ready");
+      throw("API Not Ready");
+    }
+
+    if(this._tokens === undefined) {
+      throw("Authorization tokens undefined");
+    }
+
+    return await this._axios({
+        method: 'get',
+        url: `/appliances/${applianceId}/state`,
+        headers: {
+          'x-api-key': this._apiKey,
+          'Authorization': `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
+        }
+      })
+      .then(response=>response.data as ElectroluxAPIApplianceState);
+  }
+
+  async applianceCommand(applianceId:string, command:any):Promise<boolean> {
+    if(!this._ready) {
+      this.log.error("Can't pull appliances until the API is ready");
+      throw("API Not Ready");
+    }
+
+    if(this._tokens === undefined) {
+      throw("Authorization tokens undefined");
+    }
+
+    return await this._axios({
+      method: 'put',
+      url: `/appliances/${applianceId}/command`,
+      headers: {
+        'x-api-key': this._apiKey,
+        'Authorization': `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
+      },
+      data: command
+    })
+    .then(response=>{
+      if(response.status===200 || response.status === 202) return true;
+      else return false;
+    });
 
   }
 }
