@@ -2,7 +2,7 @@ import type { Logging} from 'homebridge';
 
 import { EventEmitter } from "events";
 import fs from 'fs/promises';
-import axios, {AxiosInstance} from 'axios';
+import axios, {AxiosInstance, AxiosResponse} from 'axios';
 
 type fallbackConfig = {
   accessToken: string;
@@ -71,7 +71,7 @@ export class ElectroluxAPI extends EventEmitter  {
             const expiresIn = expiration - Date.now();
             this._tokens = {accessToken, accessTokenType, refreshToken, expiresIn};
 
-            if(expiresIn > -30000) {
+            if(expiresIn >= 0) {
               //Tokens shouldn't be expired
               this.log.debug('Updating tokens');
               this.updateTokenFromCache();
@@ -95,21 +95,44 @@ export class ElectroluxAPI extends EventEmitter  {
     }
   }
 
-  private async updateTokenFromCache() {
+  private async updateTokenFromCache(force:boolean = false) {
     this.log.debug("updateTokenFromCache");
     if(this._tokens !== undefined) {
-      const {accessToken, accessTokenType, refreshToken} = this._tokens;
-      this
-        .updateToken(accessToken, accessTokenType, refreshToken)
-        .catch((rejectionCode)=>{
-          if(rejectionCode===401) {
-            this.updateTokenFromConfig();
-          }
-          else if(rejectionCode===429) {
-            this.log.debug("Too many requests. We probably restarted homebridge too many times too quickly. Let's wait 10 seconds and try again.");
-            //setTimeout(()=>this.updateTokenFromCache(), 10000);
+      const {accessToken, accessTokenType, refreshToken, expiresIn} = this._tokens;
+
+      if(!force && expiresIn > 60000) {
+        this.log.debug("Tokens shouldn't update for a while, so let's try getting the appliances list instead. If that fails, we'll have to update anyway.");
+        const startThisAll = Date.now();
+        this._getAppliances()
+        .then(()=>{
+          this.log.debug("That worked");
+          const adjustedTimeout = expiresIn - (startThisAll - Date.now());
+          setTimeout(()=>this.updateTokenFromCache(), adjustedTimeout-30000);
+
+          this._ready = true;
+          this.emit('ready');
+        })
+        .catch(err=>{
+          if(err.status===401) {
+            this.log.debug("Unauthorized. Let's try to update the tokens.");
+            this.updateTokenFromCache(true);
           }
         })
+
+      }
+      else {
+        this
+          .updateToken(accessToken, accessTokenType, refreshToken)
+          .catch((rejectionCode)=>{
+            if(rejectionCode===401) {
+              this.updateTokenFromConfig();
+            }
+            else if(rejectionCode===429) {
+              this.log.debug("Too many requests. We probably restarted homebridge too many times too quickly. Let's wait 10 seconds and try again.");
+              //setTimeout(()=>this.updateTokenFromCache(), 10000);
+            }
+          })
+      }
     }
   }
 
@@ -139,7 +162,7 @@ export class ElectroluxAPI extends EventEmitter  {
       })
       .then(response=>{
         if(response.status===200) {
-          const expirationTimeout = (response.data.expiresIn-30)*1000
+          const expirationTimeout = response.data.expiresIn*1000
           
 
           const data = {
@@ -159,7 +182,7 @@ export class ElectroluxAPI extends EventEmitter  {
             expiresIn: expirationTimeout
           };
 
-          setTimeout(()=>this.updateTokenFromCache(), expirationTimeout);
+          setTimeout(()=>this.updateTokenFromCache(), expirationTimeout-30000);
 
           this._ready = true;
           this.emit('ready');
@@ -203,24 +226,37 @@ export class ElectroluxAPI extends EventEmitter  {
     return this._ready;
   }
 
-
+  private _getAppliances():Promise<AxiosResponse<any, any>> {
+    return new Promise((resolve, reject) =>{
+      if(this._tokens !== undefined) {
+        resolve(
+          this._axios({
+            method: 'get',
+            url: '/appliances',
+            headers: {
+              'x-api-key': this._apiKey,
+              'Authorization': `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
+            },
+      
+          })
+        );
+      }
+      else {
+        reject();
+      }
+    });
+    
+  }
 
   async appliances():Promise<ElectroluxAPIAppliance[]> {
     if(!this._ready) {
       this.log.error("Can't pull appliances until the API is ready");
     }
-    else if(this._tokens !== undefined) {
+    else {
       this.log.debug("Getting appliances");
-      return await this._axios({
-        method: 'get',
-        url: '/appliances',
-        headers: {
-          'x-api-key': this._apiKey,
-          'Authorization': `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
-        },
-  
-      })
+      return await this._getAppliances()
       .then(response=>response.data)
+      .catch(()=>[])
 
     }
 
