@@ -5,24 +5,30 @@
   "schema": {
     "type": "object",
     "properties": {
-      "api_key": {
+      "apiKey": {
         "title": "Electrolux API Key",
-        "type": "string",
-        "required": true
+        "type": "string"
       },
-      "Access Token": { 
-        "type": "string",
-        "required": true
+      "accessToken": { 
+        "title": "Access Token",
+        "type": "string"
       },
-      "Access token type": { 
+      "accessTokenType": {
+        "title":  "Access token type", 
         "type": "string",
-        "required": true
+        "default": "Bearer"
       },
-      "Refresh Token": { 
-        "type": "string",
-        "required": true
+      "refreshToken": { 
+        "title": "Refresh Token",
+        "type": "string"
       }
-    }
+    },
+    "required": [
+        "apiKey",
+        "accessToken",
+        "accessTokenType",
+        "refreshToken"
+    ]
   },
   "form": [
     {
@@ -33,7 +39,7 @@
           "type": "help",
           "helpvalue": "To get an API key:<ol><li>Open the Electrolux Group Developers <a href=\"https://developer.electrolux.one/dashboard\">Dashboard</a> page </li><li>Enter homebridge-electrolux-plugin for the API Key Name</li><li>Click on CREATE NEW API KEY.</li></ol>"
         },
-        "api_key"
+        "apiKey"
       ]
     },
     {
@@ -44,9 +50,9 @@
           "type": "help",
           "helpvalue": "<ol><li>Open the Electrolux Group Developers <a href=\"https://developer.electrolux.one/dashboard\">Dashboard</a> page </li><li>Click on GET ACCESS TOKEN.</li><li>Complete the authentication flow.</li></ol>"
         },
-        "Access Token",
-        "Access token type",
-        "Refresh Token"
+        "accessToken",
+        "accessTokenType",
+        "refreshToken"
 
       ]
     }
