@@ -1,3 +1,9 @@
+# DS_Store
+.DS_Store
+
+# I've got a folder called ScratchPad that I use for pulling api keys / curl samples / etc. Part of my work space, but nothing I want committed.
+ScratchPad
+
 # Ignore compiled code
 dist
 
@@ -121,6 +127,3 @@ dist
 
 # Webstorm
 .idea
-
-# DS_Store
-.DS_Store
