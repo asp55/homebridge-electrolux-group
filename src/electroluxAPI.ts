@@ -2,7 +2,8 @@ import type { Logging } from "homebridge";
 
 import { EventEmitter } from "events";
 import fs from "fs/promises";
-import axios, { AxiosInstance, AxiosResponse } from "axios";
+import axios, { AxiosResponse } from "axios";
+import rateLimit, { RateLimitedAxiosInstance } from "axios-rate-limit";
 
 type fallbackConfig = {
   accessToken: string;
@@ -41,15 +42,20 @@ type ElectroluxAPIApplianceInfo = {
     variant: string;
     colour: string;
   };
-  capabilities: any;
+  capabilities: Record<string, string| Record<string, string>>;
 }
 
 
-type ElectroluxAPIApplianceState = any;
+type ElectroluxAPIApplianceState = {
+  applianceId: string;
+  connectionState: string;
+  status: string;
+  properties: Record<string, string | Record<string, string>>;
+};
 
 export class ElectroluxAPI extends EventEmitter  {
 
-  private _axios:AxiosInstance = axios.create({ baseURL: "https://api.developer.electrolux.one/api/v1" });
+  private _axios:RateLimitedAxiosInstance = rateLimit(axios.create({ baseURL: "https://api.developer.electrolux.one/api/v1" }), { maxRPS:5 });
 
   private _ready:boolean = false;
   private _apiKey:string|undefined = undefined;
@@ -60,7 +66,7 @@ export class ElectroluxAPI extends EventEmitter  {
 
   constructor(
     public readonly log: Logging,
-    options:ElectroluxAPIOptions = {},
+    options:ElectroluxAPIOptions = {}
   ) {
     super();
 
@@ -106,7 +112,7 @@ export class ElectroluxAPI extends EventEmitter  {
             else {
               this.log.error(JSON.stringify(err));
             }
-          },
+          }
         );
     }
   }
@@ -167,14 +173,14 @@ export class ElectroluxAPI extends EventEmitter  {
         url: "/token/refresh",
         headers: {
           "x-api-key": this._apiKey,
-          "Authorization": `${accessTokenType} ${accessToken}`,
+          "Authorization": `${accessTokenType} ${accessToken}`
         },
         data: {
-          refreshToken: refreshToken,
+          refreshToken: refreshToken
         },
         validateStatus: function (status) {
           return [200,401,403,429,500].includes(status); // Resolve only if the status code is less than 500
-        },
+        }
       })
         .then(response=>{
           if(response.status===200) {
@@ -185,7 +191,7 @@ export class ElectroluxAPI extends EventEmitter  {
               accessToken: response.data.accessToken,
               accessTokenType: response.data.tokenType,
               refreshToken: response.data.refreshToken,
-              expiration: Date.now()+expirationTimeout,
+              expiration: Date.now()+expirationTimeout
             };
             if(typeof this._tokensCache === "string") {
               fs.writeFile(this._tokensCache, JSON.stringify(data));
@@ -195,7 +201,7 @@ export class ElectroluxAPI extends EventEmitter  {
               accessToken: data.accessToken,
               accessTokenType: data.accessTokenType,
               refreshToken: data.refreshToken,
-              expiresIn: expirationTimeout,
+              expiresIn: expirationTimeout
             };
 
             setTimeout(()=>this.updateTokenFromCache(), expirationTimeout-30000);
@@ -243,26 +249,25 @@ export class ElectroluxAPI extends EventEmitter  {
     return this._ready;
   }
 
-  private _getAppliances():Promise<AxiosResponse<any, any>> {
+  private _getAppliances():Promise<AxiosResponse<ElectroluxAPIAppliance[]>> {
     return new Promise((resolve, reject) =>{
       if(this._tokens !== undefined) {
         resolve(
-          this._axios({
+          this._axios<ElectroluxAPIAppliance[]>({
             method: "get",
             url: "/appliances",
             headers: {
               "x-api-key": this._apiKey,
-              "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
-            },
+              "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`
+            }
       
-          }),
+          })
         );
       }
       else {
         reject();
       }
     });
-    
   }
 
   async appliances():Promise<ElectroluxAPIAppliance[]> {
@@ -287,13 +292,13 @@ export class ElectroluxAPI extends EventEmitter  {
       throw("Authorization tokens undefined");
     }
 
-    return await this._axios({
+    return await this._axios<ElectroluxAPIApplianceInfo>({
       method: "get",
       url: `/appliances/${applianceId}/info`,
       headers: {
         "x-api-key": this._apiKey,
-        "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
-      },
+        "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`
+      }
     })
       .then(response=>response.data as ElectroluxAPIApplianceInfo);
   }
@@ -310,18 +315,18 @@ export class ElectroluxAPI extends EventEmitter  {
       throw("Authorization tokens undefined");
     }
 
-    return await this._axios({
+    return await this._axios<ElectroluxAPIApplianceState>({
       method: "get",
       url: `/appliances/${applianceId}/state`,
       headers: {
         "x-api-key": this._apiKey,
-        "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
-      },
+        "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`
+      }
     })
       .then(response=>response.data as ElectroluxAPIApplianceState);
   }
 
-  async applianceCommand(applianceId:string, command:any):Promise<boolean> {
+  async applianceCommand(applianceId:string, command:object):Promise<boolean> {
     if(!this._ready) {
       this.log.error("Can't pull appliances until the API is ready");
       throw("API Not Ready");
@@ -336,9 +341,9 @@ export class ElectroluxAPI extends EventEmitter  {
       url: `/appliances/${applianceId}/command`,
       headers: {
         "x-api-key": this._apiKey,
-        "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
+        "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`
       },
-      data: command,
+      data: command
     })
       .then(response=>{
         if(response.status===200 || response.status === 202) {
