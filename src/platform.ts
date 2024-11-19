@@ -1,8 +1,8 @@
-import type { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
+import type { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service } from "homebridge";
 
-import { ElectroluxPlatformAccessory } from './platformAccessory.js';
-import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
-import { ElectroluxAPI } from './electroluxAPI.js';
+import { ElectroluxPlatformAccessory } from "./platformAccessory.js";
+import { PLATFORM_NAME, PLUGIN_NAME } from "./settings.js";
+import { ElectroluxAPI } from "./electroluxAPI.js";
 
 /**
  * HomebridgePlatform
@@ -32,8 +32,8 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
     this.electroluxAPI = new ElectroluxAPI(log, { tokensCache: `${api.user.storagePath()}/${PLUGIN_NAME}_cache` } );
 
 
-    const requiredConfig = ['apiKey', 'accessToken', 'accessTokenType', 'refreshToken'];
-    const haveRequired = requiredConfig.map(v=>this.config[v] && this.config[v]!=='');
+    const requiredConfig = ["apiKey", "accessToken", "accessTokenType", "refreshToken"];
+    const haveRequired = requiredConfig.map(v=>this.config[v] && this.config[v]!=="");
     if(haveRequired.reduce((a,c)=>a&&c, true)) {
       this.electroluxAPI.apiKey = this.config.apiKey;
       this.electroluxAPI.fallbackConfig = {
@@ -41,22 +41,24 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
         accessTokenType: this.config.accessTokenType,
         refreshToken: this.config.refreshToken,
       };
-    } else {
-      const configParamTitles = ['Electrolux API Key', 'Access Token', 'Access token type',  'Refresh Token'];
+    }
+    else {
+      const configParamTitles = ["Electrolux API Key", "Access Token", "Access token type",  "Refresh Token"];
 
       const missingConfig = haveRequired.reduce((a,c,i) => {
         if(!c) {
           return `${a}\n ${configParamTitles[i]} [${requiredConfig[i]}]`;
-        } else {
+        }
+        else {
           return a;
         }
 
-      }, '');
+      }, "");
 
       this.log.error(`Missing required configuration. Please add or update: ${missingConfig}`);
     }
 
-    this.log.debug('Finished initializing platform:', this.config);
+    this.log.debug("Finished initializing platform:", this.config);
 
 
 
@@ -66,11 +68,11 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
     // Dynamic Platform plugins should only register new accessories after this event was fired,
     // in order to ensure they weren't added to homebridge already. This event can also be used
     // to start discovery of new accessories.
-    this.api.on('didFinishLaunching', () => {
-      log.debug('Executed didFinishLaunching callback');
+    this.api.on("didFinishLaunching", () => {
+      log.debug("Executed didFinishLaunching callback");
       
-      this.electroluxAPI.on('ready', ()=>{
-        log.debug('Executed electroluxAPI ready callback');
+      this.electroluxAPI.on("ready", ()=>{
+        log.debug("Executed electroluxAPI ready callback");
         // run the method to discover / register your devices as accessories
         this.discoverDevices();
 
@@ -83,7 +85,7 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
    * It should be used to set up event handlers for characteristics and update respective values.
    */
   configureAccessory(accessory: PlatformAccessory) {
-    this.log.info('Loading accessory from cache:', accessory.displayName);
+    this.log.info("Loading accessory from cache:", accessory.displayName);
 
     // add the restored accessory to the accessories cache, so we can track if it has already been registered
     this.accessories.push(accessory);
@@ -95,7 +97,7 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   discoverDevices() {
-    this.log.debug('Discover Devices');
+    this.log.debug("Discover Devices");
     this.electroluxAPI.appliances().then(appliances=>{
       for(const appliance of appliances) {
         // generate a unique id for the accessory from the electrolux appliance id
@@ -107,7 +109,7 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
 
         if (existingAccessory) {
           // the accessory already exists
-          this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
+          this.log.info("Restoring existing accessory from cache:", existingAccessory.displayName);
 
           // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. e.g.:
           // existingAccessory.context.device = device;
@@ -121,9 +123,10 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
           // remove platform accessories when no longer present
           // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
           // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
-        } else {
+        }
+        else {
           // the accessory does not yet exist, so we need to create it
-          this.log.info('Adding new accessory:', appliance.applianceName);
+          this.log.info("Adding new accessory:", appliance.applianceName);
 
           // create a new accessory
           const accessory = new this.api.platformAccessory(appliance.applianceName, uuid);

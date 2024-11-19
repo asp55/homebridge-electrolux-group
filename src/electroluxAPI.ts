@@ -1,8 +1,8 @@
-import type { Logging} from 'homebridge';
+import type { Logging } from "homebridge";
 
 import { EventEmitter } from "events";
-import fs from 'fs/promises';
-import axios, {AxiosInstance, AxiosResponse} from 'axios';
+import fs from "fs/promises";
+import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 type fallbackConfig = {
   accessToken: string;
@@ -49,7 +49,7 @@ type ElectroluxAPIApplianceState = any;
 
 export class ElectroluxAPI extends EventEmitter  {
 
-  private _axios:AxiosInstance = axios.create({ baseURL: 'https://api.developer.electrolux.one/api/v1' });
+  private _axios:AxiosInstance = axios.create({ baseURL: "https://api.developer.electrolux.one/api/v1" });
 
   private _ready:boolean = false;
   private _apiKey:string|undefined = undefined;
@@ -60,9 +60,9 @@ export class ElectroluxAPI extends EventEmitter  {
 
   constructor(
     public readonly log: Logging,
-    options:ElectroluxAPIOptions = {}
+    options:ElectroluxAPIOptions = {},
   ) {
-    super()
+    super();
 
     if(options.apiKey) {
       this.apiKey = options.apiKey;
@@ -83,26 +83,26 @@ export class ElectroluxAPI extends EventEmitter  {
         .readFile(this._tokensCache)
         .then(
           contents=>{
-            const {accessToken, accessTokenType, refreshToken, expiration} =  JSON.parse(contents.toString());
+            const { accessToken, accessTokenType, refreshToken, expiration } =  JSON.parse(contents.toString());
             const expiresIn = expiration - Date.now();
-            this._tokens = {accessToken, accessTokenType, refreshToken, expiresIn};
+            this._tokens = { accessToken, accessTokenType, refreshToken, expiresIn };
 
             if(expiresIn >= 0) {
               //Tokens shouldn't be expired
-              this.log.debug('Updating tokens');
+              this.log.debug("Updating tokens");
               this.updateTokenFromCache();
             }
             else {
-              this.log.debug('Cached tokens have expired, let\'s try what\'s in config.');
+              this.log.debug("Cached tokens have expired, let's try what's in config.");
               this.updateTokenFromConfig();
             }
             
           }, 
           err=>{ 
-            if(err.code === 'ENOENT') {
-              this.log.debug('No cache, let\'s try what\'s in config.');
+            if(err.code === "ENOENT") {
+              this.log.debug("No cache, let's try what's in config.");
               this.updateTokenFromConfig();
-            }
+            } 
             else {
               this.log.error(JSON.stringify(err));
             }
@@ -114,26 +114,26 @@ export class ElectroluxAPI extends EventEmitter  {
   private async updateTokenFromCache(force:boolean = false) {
     this.log.debug("updateTokenFromCache");
     if(this._tokens !== undefined) {
-      const {accessToken, accessTokenType, refreshToken, expiresIn} = this._tokens;
+      const { accessToken, accessTokenType, refreshToken, expiresIn } = this._tokens;
 
       if(!force && expiresIn > 60000) {
         this.log.debug("Tokens shouldn't update for a while, so let's try getting the appliances list instead. If that fails, we'll have to update anyway.");
         const startThisAll = Date.now();
         this._getAppliances()
-        .then(()=>{
-          this.log.debug("That worked");
-          const adjustedTimeout = expiresIn - (startThisAll - Date.now());
-          setTimeout(()=>this.updateTokenFromCache(), adjustedTimeout-30000);
+          .then(()=>{
+            this.log.debug("That worked");
+            const adjustedTimeout = expiresIn - (startThisAll - Date.now());
+            setTimeout(()=>this.updateTokenFromCache(), adjustedTimeout-30000);
 
-          this._ready = true;
-          this.emit('ready');
-        })
-        .catch(err=>{
-          if(err.status===401) {
-            this.log.debug("Unauthorized. Let's try to update the tokens.");
-            this.updateTokenFromCache(true);
-          }
-        })
+            this._ready = true;
+            this.emit("ready");
+          })
+          .catch(err=>{
+            if(err.status===401) {
+              this.log.debug("Unauthorized. Let's try to update the tokens.");
+              this.updateTokenFromCache(true);
+            }
+          });
 
       }
       else {
@@ -147,7 +147,7 @@ export class ElectroluxAPI extends EventEmitter  {
               this.log.debug("Too many requests. We probably restarted homebridge too many times too quickly. Let's wait 10 seconds and try again.");
               //setTimeout(()=>this.updateTokenFromCache(), 10000);
             }
-          })
+          });
       }
     }
   }
@@ -155,7 +155,7 @@ export class ElectroluxAPI extends EventEmitter  {
   private async updateTokenFromConfig() {
     this.log.debug("updateTokenFromConfig");
     if(this._config !== undefined) {
-      const {accessToken, accessTokenType, refreshToken} = this._config;
+      const { accessToken, accessTokenType, refreshToken } = this._config;
       this.updateToken(accessToken, accessTokenType, refreshToken);
     }
   }
@@ -163,61 +163,62 @@ export class ElectroluxAPI extends EventEmitter  {
   private async updateToken(accessToken:string, accessTokenType:string, refreshToken:string) {
     return await new Promise((resolve, reject)=>{
       this._axios({
-        method: 'post',
-        url: '/token/refresh',
+        method: "post",
+        url: "/token/refresh",
         headers: {
-          'x-api-key': this._apiKey,
-          'Authorization': `${accessTokenType} ${accessToken}`,
+          "x-api-key": this._apiKey,
+          "Authorization": `${accessTokenType} ${accessToken}`,
         },
         data: {
-          refreshToken: refreshToken
+          refreshToken: refreshToken,
         },
         validateStatus: function (status) {
           return [200,401,403,429,500].includes(status); // Resolve only if the status code is less than 500
-        }
+        },
       })
-      .then(response=>{
-        if(response.status===200) {
-          const expirationTimeout = response.data.expiresIn*1000
+        .then(response=>{
+          if(response.status===200) {
+            const expirationTimeout = response.data.expiresIn*1000;
           
 
-          const data = {
-            accessToken: response.data.accessToken,
-            accessTokenType: response.data.tokenType,
-            refreshToken: response.data.refreshToken,
-            expiration: Date.now()+expirationTimeout
-          };
-          if(typeof this._tokensCache === "string") {
-            fs.writeFile(this._tokensCache, JSON.stringify(data));
+            const data = {
+              accessToken: response.data.accessToken,
+              accessTokenType: response.data.tokenType,
+              refreshToken: response.data.refreshToken,
+              expiration: Date.now()+expirationTimeout,
+            };
+            if(typeof this._tokensCache === "string") {
+              fs.writeFile(this._tokensCache, JSON.stringify(data));
+            }
+
+            this._tokens = {
+              accessToken: data.accessToken,
+              accessTokenType: data.accessTokenType,
+              refreshToken: data.refreshToken,
+              expiresIn: expirationTimeout,
+            };
+
+            setTimeout(()=>this.updateTokenFromCache(), expirationTimeout-30000);
+
+            this._ready = true;
+            this.emit("ready");
+            resolve("success");
+
           }
-
-          this._tokens = {
-            accessToken: data.accessToken,
-            accessTokenType: data.accessTokenType,
-            refreshToken: data.refreshToken,
-            expiresIn: expirationTimeout
-          };
-
-          setTimeout(()=>this.updateTokenFromCache(), expirationTimeout-30000);
-
-          this._ready = true;
-          this.emit('ready');
-          resolve('success');
-
-        }
-        else if(response.status === 401) {
-          this.log.error(`Error 401: Unauthorized - Usually this means that the access tokens expired without being refreshed. Please update access token & refresh token in configuration.`);
-          reject(401);
-        }
-        else { 
-          this.log.error(`Error ${response.status}: ${response.data.message} - ${response.data.detail}`);
-          reject(response.status);
-        }
-      })
-      .catch(err=>{
-        this.log.error(`Error ${err.status}: ${err.message}`);
-        reject(err.status);
-      });
+          else if(response.status === 401) {
+            this.log.error("Error 401: Unauthorized - Usually this means that the access tokens expired without being refreshed.");
+            this.log.error("Please update access token & refresh token in configuration.");
+            reject(401);
+          }
+          else { 
+            this.log.error(`Error ${response.status}: ${response.data.message} - ${response.data.detail}`);
+            reject(response.status);
+          }
+        })
+        .catch(err=>{
+          this.log.error(`Error ${err.status}: ${err.message}`);
+          reject(err.status);
+        });
     });
 
     
@@ -247,14 +248,14 @@ export class ElectroluxAPI extends EventEmitter  {
       if(this._tokens !== undefined) {
         resolve(
           this._axios({
-            method: 'get',
-            url: '/appliances',
+            method: "get",
+            url: "/appliances",
             headers: {
-              'x-api-key': this._apiKey,
-              'Authorization': `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
+              "x-api-key": this._apiKey,
+              "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
             },
       
-          })
+          }),
         );
       }
       else {
@@ -272,7 +273,7 @@ export class ElectroluxAPI extends EventEmitter  {
 
     this.log.debug("Getting appliances");
     return await this._getAppliances()
-    .then(response=>response.data)
+      .then(response=>response.data);
 
   }
 
@@ -287,13 +288,13 @@ export class ElectroluxAPI extends EventEmitter  {
     }
 
     return await this._axios({
-        method: 'get',
-        url: `/appliances/${applianceId}/info`,
-        headers: {
-          'x-api-key': this._apiKey,
-          'Authorization': `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
-        }
-      })
+      method: "get",
+      url: `/appliances/${applianceId}/info`,
+      headers: {
+        "x-api-key": this._apiKey,
+        "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
+      },
+    })
       .then(response=>response.data as ElectroluxAPIApplianceInfo);
   }
 
@@ -310,13 +311,13 @@ export class ElectroluxAPI extends EventEmitter  {
     }
 
     return await this._axios({
-        method: 'get',
-        url: `/appliances/${applianceId}/state`,
-        headers: {
-          'x-api-key': this._apiKey,
-          'Authorization': `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
-        }
-      })
+      method: "get",
+      url: `/appliances/${applianceId}/state`,
+      headers: {
+        "x-api-key": this._apiKey,
+        "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
+      },
+    })
       .then(response=>response.data as ElectroluxAPIApplianceState);
   }
 
@@ -331,18 +332,22 @@ export class ElectroluxAPI extends EventEmitter  {
     }
 
     return await this._axios({
-      method: 'put',
+      method: "put",
       url: `/appliances/${applianceId}/command`,
       headers: {
-        'x-api-key': this._apiKey,
-        'Authorization': `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
+        "x-api-key": this._apiKey,
+        "Authorization": `${this._tokens.accessTokenType} ${this._tokens.accessToken}`,
       },
-      data: command
+      data: command,
     })
-    .then(response=>{
-      if(response.status===200 || response.status === 202) return true;
-      else return false;
-    });
+      .then(response=>{
+        if(response.status===200 || response.status === 202) {
+          return true;
+        }
+        else {
+          return false;
+        }
+      });
 
   }
 }

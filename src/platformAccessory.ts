@@ -1,6 +1,6 @@
-import type { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
+import type { CharacteristicValue, PlatformAccessory, Service } from "homebridge";
 
-import type { ElectroluxPluginPlatform } from './platform.js';
+import type { ElectroluxPluginPlatform } from "./platform.js";
 
 /**
  * Platform Accessory
@@ -27,9 +27,9 @@ export class ElectroluxPlatformAccessory {
 
     // set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Default-Manufacturer')
-      .setCharacteristic(this.platform.Characteristic.Model, 'Default-Model')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, 'Default-Serial');
+      .setCharacteristic(this.platform.Characteristic.Manufacturer, "Default-Manufacturer")
+      .setCharacteristic(this.platform.Characteristic.Model, "Default-Model")
+      .setCharacteristic(this.platform.Characteristic.SerialNumber, "Default-Serial");
 
 
 
@@ -102,7 +102,7 @@ export class ElectroluxPlatformAccessory {
     // implement your own code to turn your device on/off
     this.exampleStates.On = value as boolean;
 
-    this.platform.log.debug('Set Characteristic On ->', value);
+    this.platform.log.debug("Set Characteristic On ->", value);
   }
 
   /**
@@ -122,7 +122,7 @@ export class ElectroluxPlatformAccessory {
     // implement your own code to check if the device is on
     const isOn = this.exampleStates.On;
 
-    this.platform.log.debug('Get Characteristic On ->', isOn);
+    this.platform.log.debug("Get Characteristic On ->", isOn);
 
     // if you need to return an error to show the device as "Not Responding" in the Home app:
     // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
@@ -138,6 +138,6 @@ export class ElectroluxPlatformAccessory {
     // implement your own code to set the brightness
     this.exampleStates.Brightness = value as number;
 
-    this.platform.log.debug('Set Characteristic Brightness -> ', value);
+    this.platform.log.debug("Set Characteristic Brightness -> ", value);
   }
 }
