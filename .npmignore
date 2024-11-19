@@ -4,6 +4,9 @@
 # I've got a folder called ScratchPad that I use for pulling api keys / curl samples / etc. Part of my work space, but nothing I want committed.
 ScratchPad
 
+# Ignore research folder
+research
+
 # Ignore source code
 src
 
