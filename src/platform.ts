@@ -29,7 +29,7 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
     this.Service = api.hap.Service;
     this.Characteristic = api.hap.Characteristic;
 
-    this.electroluxAPI = new ElectroluxAPI(log, {tokensCache: `${api.user.storagePath()}/${PLUGIN_NAME}_cache`});
+    this.electroluxAPI = new ElectroluxAPI(log, { tokensCache: `${api.user.storagePath()}/${PLUGIN_NAME}_cache` } );
 
 
     const requiredConfig = ['apiKey', 'accessToken', 'accessTokenType', 'refreshToken'];
@@ -39,17 +39,15 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
       this.electroluxAPI.fallbackConfig = {
         accessToken: this.config.accessToken,
         accessTokenType: this.config.accessTokenType,
-        refreshToken: this.config.refreshToken
-      }
-    }
-    else {
+        refreshToken: this.config.refreshToken,
+      };
+    } else {
       const configParamTitles = ['Electrolux API Key', 'Access Token', 'Access token type',  'Refresh Token'];
 
       const missingConfig = haveRequired.reduce((a,c,i) => {
         if(!c) {
           return `${a}\n ${configParamTitles[i]} [${requiredConfig[i]}]`;
-        }
-        else {
+        } else {
           return a;
         }
 
@@ -76,7 +74,7 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
         // run the method to discover / register your devices as accessories
         this.discoverDevices();
 
-      })
+      });
     });
   }
 
@@ -123,8 +121,7 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
           // remove platform accessories when no longer present
           // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
           // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
-        } 
-        else {
+        } else {
           // the accessory does not yet exist, so we need to create it
           this.log.info('Adding new accessory:', appliance.applianceName);
 
@@ -143,7 +140,7 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
           this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         }
       }
-    })
+    });
     
-    }
   }
+}

@@ -1,7 +1,6 @@
 import type { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 
 import type { ElectroluxPluginPlatform } from './platform.js';
-import { ElectroluxAPI } from './electroluxAPI.js';
 
 /**
  * Platform Accessory
@@ -9,7 +8,7 @@ import { ElectroluxAPI } from './electroluxAPI.js';
  * Each accessory may expose multiple services of different service types.
  */
 export class ElectroluxPlatformAccessory {
-  //private service: Service;
+  private service: Service;
 
   /**
    * These are just used to create a working example
@@ -22,7 +21,7 @@ export class ElectroluxPlatformAccessory {
 
   constructor(
     private readonly platform: ElectroluxPluginPlatform,
-    private readonly accessory: PlatformAccessory
+    private readonly accessory: PlatformAccessory,
   ) {
     //console.log("Context", accessory.context.device);
 
@@ -36,7 +35,7 @@ export class ElectroluxPlatformAccessory {
 
     // // get the LightBulb service if it exists, otherwise create a new LightBulb service
     // // you can create multiple services for each accessory
-    // this.service = this.accessory.getService(this.platform.Service.Lightbulb) || this.accessory.addService(this.platform.Service.Lightbulb);
+    this.service = this.accessory.getService(this.platform.Service.Lightbulb) || this.accessory.addService(this.platform.Service.Lightbulb);
 
     // // set the service name, this is what is displayed as the default name on the Home app
     // // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
