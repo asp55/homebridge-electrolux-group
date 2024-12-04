@@ -37,7 +37,7 @@
       "items": [
         {
           "type": "help",
-          "helpvalue": "To get an API key:<ol><li>Open the Electrolux Group Developers <a href=\"https://developer.electrolux.one/dashboard\">Dashboard</a> page </li><li>Enter homebridge-electrolux-plugin for the API Key Name</li><li>Click on CREATE NEW API KEY.</li></ol>"
+          "helpvalue": "To get an API key:<ol><li>Open the Electrolux Group Developers <a href=\"https://developer.electrolux.one/dashboard\" target=\"_blank\">Dashboard</a> page </li><li>Enter homebridge-electrolux-plugin for the API Key Name</li><li>Click on CREATE NEW API KEY.</li></ol>"
         },
         "apiKey"
       ]
@@ -48,7 +48,7 @@
       "items": [
         {
           "type": "help",
-          "helpvalue": "<ol><li>Open the Electrolux Group Developers <a href=\"https://developer.electrolux.one/dashboard\">Dashboard</a> page </li><li>Click on GET ACCESS TOKEN.</li><li>Complete the authentication flow.</li></ol>"
+          "helpvalue": "<ol><li>Open the Electrolux Group Developers <a href=\"https://developer.electrolux.one/dashboard\" target=\"_blank\">Dashboard</a> page </li><li>Click on GET ACCESS TOKEN.</li><li>Complete the authentication flow.</li></ol>"
         },
         "accessToken",
         "accessTokenType",
