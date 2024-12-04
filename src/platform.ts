@@ -1,8 +1,18 @@
-import type { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service } from "homebridge";
+import { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service } from "homebridge";
+import type { ElectroluxAPIAppliance, ElectroluxAPIApplianceInfoInfo } from "./electroluxAPI.js";
 
-import { ElectroluxPlatformAccessory } from "./platformAccessory.js";
+//import { ElectroluxPlatformAccessory } from "./platformAccessory.js";
 import { PLATFORM_NAME, PLUGIN_NAME } from "./settings.js";
 import { ElectroluxAPI } from "./electroluxAPI.js";
+import PlatformAccessories from "./accessories/platformAccessories.js";
+import { AlphabatizeKeys } from "./utils.js";
+
+
+export type PlatformAccessoryContext = {
+  appliance: ElectroluxAPIAppliance;
+  info: ElectroluxAPIApplianceInfoInfo;
+}
+
 
 /**
  * HomebridgePlatform
@@ -98,7 +108,7 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
    */
   discoverDevices() {
     this.log.debug("Discover Devices");
-    this.electroluxAPI.appliances().then(appliances=>{
+    this.electroluxAPI.appliances().then(async appliances=>{
       for(const appliance of appliances) {
         // generate a unique id for the accessory from the electrolux appliance id
         const uuid = this.api.hap.uuid.generate(appliance.applianceId);
@@ -107,41 +117,74 @@ export class ElectroluxPluginPlatform implements DynamicPlatformPlugin {
         // the cached devices we stored in the `configureAccessory` method above
         const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
 
-        if (existingAccessory) {
-          // the accessory already exists
-          this.log.info("Restoring existing accessory from cache:", existingAccessory.displayName);
+        const applianceInfo = await this.electroluxAPI.applianceInfo(appliance.applianceId);
+        const accessoryInfo:ElectroluxAPIApplianceInfoInfo = applianceInfo.applianceInfo;
 
-          // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. e.g.:
-          // existingAccessory.context.device = device;
-          // this.api.updatePlatformAccessories([existingAccessory]);
 
-          // create the accessory handler for the restored accessory
-          // this is imported from `platformAccessory.ts`
-          new ElectroluxPlatformAccessory(this, existingAccessory);
+        const accessory = (()=>{
+          if (existingAccessory) {
+            // the accessory already exists
+            this.log.info("Restoring existing accessory from cache:", existingAccessory.displayName);
+  
+            existingAccessory.context.info = accessoryInfo;
+            this.api.updatePlatformAccessories([existingAccessory]);
+  
+            return existingAccessory as PlatformAccessory<PlatformAccessoryContext>;
+          }
+          else {
+            // the accessory does not yet exist, so we need to create it
+            this.log.info("Adding new accessory:", appliance.applianceName);
+  
+            // create a new accessory
+            const accessory = new this.api.platformAccessory<PlatformAccessoryContext>(appliance.applianceName, uuid);
+  
+            // store a copy of the device object in the `accessory.context`
+            // the `context` property can be used to store any data about the accessory you may need
+            accessory.context.appliance = appliance;
+            accessory.context.info = accessoryInfo;
+            return accessory;
+  
+          }
 
-          // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, e.g.:
-          // remove platform accessories when no longer present
-          // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
-          // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
+        })();
+
+        if(PlatformAccessories.supported(accessoryInfo.brand, accessoryInfo.model)) {
+          //Get the accessory class
+          const AccessoryClass = PlatformAccessories.accessory(accessoryInfo.brand, accessoryInfo.model);
+
+          // create the accessory handler
+          //new ElectroluxPlatformAccessory(this, accessory);
+          new AccessoryClass(this, accessory);
+
+
+          if(!existingAccessory) {
+            // link the accessory to your platform
+            this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+          }
         }
         else {
-          // the accessory does not yet exist, so we need to create it
-          this.log.info("Adding new accessory:", appliance.applianceName);
+          const capabilities = AlphabatizeKeys(applianceInfo.capabilities);
+          const state = await this.electroluxAPI.applianceState(appliance.applianceId).then(s=>{
+            return { ...s, properties:AlphabatizeKeys(s.properties) };
+          });
 
-          // create a new accessory
-          const accessory = new this.api.platformAccessory(appliance.applianceName, uuid);
+          const researchContext = {
+            brand: accessoryInfo.brand,
+            model: accessoryInfo.model,
+            capabilities: capabilities,
+            state: state
+          };
 
-          // store a copy of the device object in the `accessory.context`
-          // the `context` property can be used to store any data about the accessory you may need
-          accessory.context.device = appliance;
-
-          // create the accessory handler for the newly create accessory
-          // this is imported from `platformAccessory.ts`
-          new ElectroluxPlatformAccessory(this, accessory);
-
-          // link the accessory to your platform
-          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+          this.log.info(`
+            ${accessoryInfo.brand} ${accessoryInfo.model} is not currently supported, but you can help!
+Please open an issue to add this model and include the following research context:
+${JSON.stringify(researchContext, null, 2)}`);
         }
+
+        
+
+
+
       }
     });
     

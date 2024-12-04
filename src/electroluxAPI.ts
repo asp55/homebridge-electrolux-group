@@ -25,23 +25,24 @@ type ElectroluxAPIOptions = {
   fallbackConfig?:fallbackConfig;
 }
 
-type ElectroluxAPIAppliance = {
+export type ElectroluxAPIAppliance = {
   applianceId: string;
   applianceName: string;
   applianceType: string;
   created: string;
 }
+export type ElectroluxAPIApplianceInfoInfo = {
+  serialNumber: string;
+  pnc: string;
+  brand: string;
+  deviceType: string;
+  model: string;
+  variant: string;
+  colour: string;
+}
 
 type ElectroluxAPIApplianceInfo = {
-  applianceInfo: {
-    serialNumber: string;
-    pnc: string;
-    brand: string;
-    deviceType: string;
-    model: string;
-    variant: string;
-    colour: string;
-  };
+  applianceInfo: ElectroluxAPIApplianceInfoInfo;
   capabilities: Record<string, string| Record<string, string>>;
 }
 
@@ -55,9 +56,12 @@ type ElectroluxAPIApplianceState = {
 
 export class ElectroluxAPI extends EventEmitter  {
 
-  private _axios:RateLimitedAxiosInstance = rateLimit(axios.create({ baseURL: "https://api.developer.electrolux.one/api/v1" }), { maxRPS:5 });
+  private _axios:RateLimitedAxiosInstance = rateLimit(
+    axios.create({ baseURL: "https://api.developer.electrolux.one/api/v1" }), 
+    { maxRPS:5 } //Max per second is actually 10 in the rate limit, but 5 simultaniously
+  );
 
-  private _ready:boolean = false;
+  private _authorized:boolean = false;
   private _apiKey:string|undefined = undefined;
   private _config:fallbackConfig|undefined = undefined;
   private _tokensCache:string|undefined = undefined;
@@ -131,7 +135,7 @@ export class ElectroluxAPI extends EventEmitter  {
             const adjustedTimeout = expiresIn - (startThisAll - Date.now());
             setTimeout(()=>this.updateTokenFromCache(), adjustedTimeout-30000);
 
-            this._ready = true;
+            this._authorized = true;
             this.emit("ready");
           })
           .catch(err=>{
@@ -162,7 +166,14 @@ export class ElectroluxAPI extends EventEmitter  {
     this.log.debug("updateTokenFromConfig");
     if(this._config !== undefined) {
       const { accessToken, accessTokenType, refreshToken } = this._config;
-      this.updateToken(accessToken, accessTokenType, refreshToken);
+      this
+        .updateToken(accessToken, accessTokenType, refreshToken)
+        .catch(rejectionCode => {
+          if(rejectionCode===401) {
+            this.log.error("Error 401: Unauthorized - Usually this means that the access tokens expired without being refreshed.");
+            this.log.error("Please update access token & refresh token in configuration.");
+          }
+        });
     }
   }
 
@@ -206,14 +217,12 @@ export class ElectroluxAPI extends EventEmitter  {
 
             setTimeout(()=>this.updateTokenFromCache(), expirationTimeout-30000);
 
-            this._ready = true;
+            this._authorized = true;
             this.emit("ready");
             resolve("success");
 
           }
           else if(response.status === 401) {
-            this.log.error("Error 401: Unauthorized - Usually this means that the access tokens expired without being refreshed.");
-            this.log.error("Please update access token & refresh token in configuration.");
             reject(401);
           }
           else { 
@@ -245,8 +254,8 @@ export class ElectroluxAPI extends EventEmitter  {
     this.init();
   }
 
-  get ready():boolean {
-    return this._ready;
+  get authorized():boolean {
+    return this._authorized;
   }
 
   private _getAppliances():Promise<AxiosResponse<ElectroluxAPIAppliance[]>> {
@@ -271,19 +280,20 @@ export class ElectroluxAPI extends EventEmitter  {
   }
 
   async appliances():Promise<ElectroluxAPIAppliance[]> {
-    if(!this._ready) {
+    if(!this._authorized) {
       this.log.error("Can't pull appliances until the API is ready");
       throw("API Not Ready");
     }
 
     this.log.debug("Getting appliances");
-    return await this._getAppliances()
-      .then(response=>response.data);
+    const appliances = await this._getAppliances();
+    return appliances.data;
 
   }
 
   async applianceInfo(applianceId:string):Promise<ElectroluxAPIApplianceInfo> {
-    if(!this._ready) {
+
+    if(!this._authorized) {
       this.log.error("Can't pull appliances until the API is ready");
       throw("API Not Ready");
     }
@@ -291,6 +301,9 @@ export class ElectroluxAPI extends EventEmitter  {
     if(this._tokens === undefined) {
       throw("Authorization tokens undefined");
     }
+
+
+    this.log.debug(`Getting info for appliance id: ${applianceId}`);
 
     return await this._axios<ElectroluxAPIApplianceInfo>({
       method: "get",
@@ -306,7 +319,7 @@ export class ElectroluxAPI extends EventEmitter  {
 
 
   async applianceState(applianceId:string):Promise<ElectroluxAPIApplianceState> {
-    if(!this._ready) {
+    if(!this._authorized) {
       this.log.error("Can't pull appliances until the API is ready");
       throw("API Not Ready");
     }
@@ -314,6 +327,8 @@ export class ElectroluxAPI extends EventEmitter  {
     if(this._tokens === undefined) {
       throw("Authorization tokens undefined");
     }
+
+    this.log.debug(`Getting state for appliance id: ${applianceId}`);
 
     return await this._axios<ElectroluxAPIApplianceState>({
       method: "get",
@@ -327,7 +342,7 @@ export class ElectroluxAPI extends EventEmitter  {
   }
 
   async applianceCommand(applianceId:string, command:object):Promise<boolean> {
-    if(!this._ready) {
+    if(!this._authorized) {
       this.log.error("Can't pull appliances until the API is ready");
       throw("API Not Ready");
     }
